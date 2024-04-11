@@ -37,15 +37,18 @@ class GH_REST(GH_REST_ABC):
     def _parseRespHeaders(self, resp: Response) -> dict:
         respHeaders: dict = dict(resp.headers)
         link: str = respHeaders["Link"]
+        respHeaders["Last-Page"] = -1
 
         splitLink: List[str] = [l.strip() for l in link.split(sep=",")]
-        lastLink: str = [l for l in splitLink if l.find('rel="last"') > -1][0]
+
+        try:
+            lastLink: str = [l for l in splitLink if l.find('rel="last"') > -1][0]
+        except IndexError:
+            return respHeaders
 
         match: Match[str] | None = re.search(pattern=r"page=(\d+)", string=lastLink)
 
-        lastPageNumber: int = 1
         if match:
-            lastPageNumber: int = int(match.group(1))
+            respHeaders["Last-Page"] = int(match.group(1))
 
-        respHeaders["Last-Page"] = lastPageNumber
         return respHeaders
